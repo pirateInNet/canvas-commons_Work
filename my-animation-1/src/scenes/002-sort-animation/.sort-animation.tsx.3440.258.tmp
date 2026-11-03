@@ -1,0 +1,61 @@
+import {makeScene2D, Rect} from '@canvas-commons/2d';
+import {
+	all,
+	createRef,
+	useRandom,
+	ThreadGenerator} from '@canvas-commons/core';
+
+/**
+ * Animate the appearance of an object.
+ */
+function* appearRect(object: Shape, duration = 1): ThreadGenerator {
+	let h = object.height();
+
+    yield* all(
+        object.opacity(0).opacity(1, duration),
+		object.height("0%").height(h, duration),
+    );
+}
+/**
+ * Animate the appearance of an object.
+ */
+function* disappear(object: Shape, duration = 1): ThreadGenerator {
+    yield* object.opacity(0, duration);
+}
+
+export default makeScene2D(function* (view) {
+  const rectangles = Array.from({length: 18}, () => createRef<Rect>());
+  const random = useRandom(12321);
+
+  rectangles.forEach((ref, i) => {
+    view.add(<Rect
+		ref={ref}
+		size={[60, random.nextInt(10, 500)]}
+		bottom={[-900+106*i,250]}
+		stroke={'white'}
+		lineWidth={4}/>);
+    });
+
+	// displaying the rects
+	yield* all(...rectangles.map(ref => appearRect(ref())));
+
+	// sorting the rects
+	let array = rectangles.map(ref => ref().size.y());
+	let end_point = array.length - 1
+	let step = 1
+	while (end_point !== 0 && array.length > 1) {
+		for (let i=0;i<end_point;i++) {
+			// swip
+			if (array[i] > array[i + 1]) {
+				array[i], array[i + 1] = array[i + 1], array[i]
+				yield* all(rectangles[i].size.y(i+1), rectangles[i+1].size.y(i));
+			}
+			step += 1
+		}
+		end_point -= 1
+	}
+
+	// hiding the rects
+	yield* all(...rectangles.map(ref => disappear(ref())));
+
+});

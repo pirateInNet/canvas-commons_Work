@@ -1,0 +1,38 @@
+import {Latex, makeScene2D, Txt, Shape} from '@canvas-commons/2d';
+import {all, createRef, ThreadGenerator} from '@canvas-commons/core';
+
+/**
+ * Animate the appearance of an object.
+ */
+function* appear(object: Shape, duration = 1): ThreadGenerator {
+    let scale = object.scale();
+
+    yield* all(
+        object.scale(0).scale(scale, duration),
+        object.opacity(0).opacity(1, duration),
+    );
+}
+
+export default makeScene2D(function* (view) {
+    const text = createRef<Txt>();
+    const math = createRef<Latex>();
+
+    view.add(<>
+        // text is empty for now since we're animating writing it
+        <Txt ref={text} fill={"white"} x={-400}></Txt>
+
+        // we're separating things to be diffed with double braces
+        <Latex ref={math} fill={"white"} x={400} tex={"{{\\sum_{i = 0}}}{{^\\infty}} {{\\frac{1}{2^i}}} = {{2}}"}></Latex>
+    </>)
+
+    yield* all(
+        text().text("Hello Motion Canvas!", 1),
+        appear(math(), 1),
+    );
+
+    // can be diffed!
+    yield* all(
+        text().text("Hello everyone!", 1),
+        math().tex("{{\\sum_{i = 0}}}{{^{5200}}} {{\\frac{1}{2^i}}} = {{13}}", 1),
+    );
+});
